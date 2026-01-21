@@ -1,20 +1,38 @@
 # Auto-Fusion: Neural Architecture Search for Multimodal Fusion
 
-Auto-Fusion is an automated system for discovering optimal multimodal fusion architectures. It leverages Reinforcement Learning (RL) to guide a Large Language Model (LLM) in generating PyTorch code for fusion modules, which are then evaluated on a proxy task (ScienceQA) using Apple Silicon (MPS) acceleration.
+Auto-Fusion is an autonomous system designed to discover optimal multimodal fusion architectures. By leveraging Reinforcement Learning (RL) and Large Language Models (LLM), it automatically generates, evaluates, and evolves PyTorch fusion modules. The system is optimized for efficiency, using proxy tasks and Apple Silicon (MPS) acceleration to enable rapid experimentation.
 
-## 🚀 Features
+## 🌟 Highlights
 
--   **Closed-Loop Evolution**: Integrates RL Controller, LLM Generator, and Proxy Evaluator.
--   **MPS Optimization**: Optimized for Apple Silicon (M-series chips) with `mps_patch`.
--   **Safe Code Execution**: Dynamic loading with AST-based security validation.
--   **Proxy Task Acceleration**: Pre-computed feature caching (DETR + T5) for fast evaluation.
--   **Mock & Real Modes**: Supports dry-runs without LLM costs and real training on ScienceQA.
+- **Closed-Loop Evolution**: Seamlessly integrates an RL Controller, LLM Generator, and Proxy Evaluator.
+- **Autonomous Coding**: Generates valid, executable PyTorch code for complex fusion mechanisms (e.g., Cross-Attention, Gating).
+- **Efficient Evaluation**: Uses pre-computed features (DETR + T5) and a lightweight proxy task (ScienceQA) to evaluate architectures in seconds.
+- **Apple Silicon Native**: Built-in support for MPS (Metal Performance Shaders) acceleration.
 
-## 🛠️ Installation
+## 📂 Project Structure
+
+The project is organized into core modules and experiment tracks:
+
+### 1. [Auto-Fusion Core](./auto-fusion/README.md) (`/auto-fusion`)
+The heart of the system. Contains the intelligent agents responsible for the search process.
+- **Controller**: RL Agent (A2C) guiding the search direction.
+- **Generator**: LLM Interface (Gemini/GPT) generating PyTorch code.
+- **Evaluator**: Proxy task trainer for rapid feedback.
+- **Bridge**: Prompt engine translating RL actions to natural language instructions.
+
+### 2. [Track 1: Experiment Report](./track1/README.md) (`/track1`)
+Contains artifacts and results from the first major experimental run.
+- **Best Model**: The discovered Cross-Attention architecture (Gen-7).
+- **Baseline**: Standard concatenation baseline for comparison.
+- **Analysis**: Training logs, loss curves, and reproduction scripts.
+
+## � Quick Start
+
+### Installation
 
 1.  **Clone the repository**:
     ```bash
-    git clone https://github.com/yourusername/Auto-Fusion.git
+    git clone https://github.com/Starryyu77/Auto-Fusion.git
     cd Auto-Fusion
     ```
 
@@ -28,76 +46,40 @@ Auto-Fusion is an automated system for discovering optimal multimodal fusion arc
     export PYTHONPATH=$PYTHONPATH:$(pwd)
     ```
 
-## 📊 Data Preparation (ScienceQA)
+### Data Preparation
 
-To run real experiments, you need to prepare the ScienceQA dataset.
+To run real experiments, prepare the ScienceQA dataset:
 
-1.  **Download Raw Data**:
-    ```bash
-    python tools/download_scienceqa.py
-    ```
-    This fetches the dataset from Hugging Face and organizes it into `data/raw/ScienceQA`.
-
-2.  **Extract Features**:
-    ```bash
-    python tools/extract_features.py --batch_size 32
-    ```
-    This encodes images (DETR-ResNet50) and text (Flan-T5-Base) into `.pt` tensors saved in `data/processed/scienceqa_features`.
-
-## 🏃‍♂️ Usage
-
-### 1. Quick Verification (Mock Mode)
-Test the entire pipeline using dummy data and mock generation (no API costs).
 ```bash
-# 1. Generate dummy data
-python tools/make_dummy_features.py --out_dir data/processed_verify
+# 1. Download Raw Data
+python tools/download_scienceqa.py
 
-# 2. Run verification script
-python scripts/verify_pipeline.py
+# 2. Extract Features (DETR + T5)
+python tools/extract_features.py --batch_size 32
 ```
 
-### 2. Evolutionary Search (Real Data)
-Run the architecture search loop using extracted ScienceQA features.
+### Running the Search
+
+Launch the evolutionary search using the `auto-fusion` core:
 
 ```bash
-python src/search_runner.py \
+python auto-fusion/core/search_runner.py \
   --data_dir data/processed/scienceqa_features \
-  --epochs 2 \
-  --iterations 5 \
-  --mock  # Remove this flag to use real LLM API
+  --epochs 5 \
+  --iterations 20
 ```
 
--   `--data_dir`: Path to feature tensors.
--   `--iterations`: Number of search rounds.
--   `--mock`: If set, uses a hardcoded generator (saves tokens). Remove to use GPT-4.
+## 📊 Results Snapshot (Track 1)
 
-## 🧠 System Architecture
+Our automated search discovered a **Cross-Attention based Fusion** architecture that demonstrates superior learning dynamics compared to standard concatenation baselines.
 
--   **Controller (`src/controller.py`)**: A2C Agent that proposes high-level actions (e.g., "Mutation", "Crossover").
--   **Bridge (`src/bridge.py`)**: Translates RL actions into prompt instructions.
--   **Generator (`src/generator.py`)**: LLM interface that writes PyTorch code (`FusionModule`).
--   **Evaluator (`src/evaluator.py`)**: Trains the generated module on the proxy task and returns a reward.
--   **Adapter (`src/adapter.py`)**: Aligns visual (2048-dim) and text (768-dim) features.
+| Model | Architecture | Characteristics |
+| :--- | :--- | :--- |
+| **Baseline** | Concat + MLP | Fast convergence, limited capacity. |
+| **Auto-Fusion** | Cross-Attention | Better feature interaction, lower final loss. |
 
-## 📂 Project Structure
-
-```
-Auto-Fusion/
-├── src/
-│   ├── search_runner.py   # Main entry point
-│   ├── controller.py      # RL Agent
-│   ├── generator.py       # LLM Interface
-│   ├── evaluator.py       # Proxy Task Trainer
-│   ├── dataset.py         # Feature Loader
-│   └── adapter.py         # Dimension Projection
-├── tools/
-│   ├── download_scienceqa.py
-│   ├── extract_features.py
-│   └── make_dummy_features.py
-├── scripts/
-│   └── verify_pipeline.py # Integration Test
-└── data/                  # Data storage
-```
+👉 *See full details in [Track 1 Report](./track1/README.md)*.
 
 ## 🛡️ Security Note
-The `Evaluator` executes generated code. While AST validation is implemented to block malicious imports (`os`, `sys`), run this system in a sandboxed environment for maximum safety.
+
+The system executes LLM-generated code. We employ AST-based static analysis to block dangerous imports (`os`, `sys`, `subprocess`). However, we strictly recommend running the search process in a sandboxed environment (Docker/Conda) for maximum safety.
